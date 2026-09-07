@@ -10,6 +10,7 @@ import Apply from "./pages/Apply";
 import Track from "./pages/Track";
 import ApplicationDetail from "./pages/ApplicationDetail";
 import Consent from "./pages/Consent";
+import Vault from "./pages/Vault";
 import Work from "./pages/Work";
 import Admin from "./pages/Admin";
 import Grievance from "./pages/Grievance";
@@ -26,6 +27,7 @@ function Router() {
       <Route path="/track" component={Track} />
       <Route path="/applications/:id" component={ApplicationDetail} />
       <Route path="/consent" component={Consent} />
+      <Route path="/vault" component={Vault} />
       <Route path="/work" component={Work} />
       <Route path="/admin" component={Admin} />
       <Route path="/grievance" component={Grievance} />

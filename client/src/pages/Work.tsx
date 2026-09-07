@@ -23,6 +23,8 @@ function WorkInner() {
   }, [appId, queue.data]);
 
   const detail = trpc.platform.detail.useQuery({ id: appId ?? 0 }, { enabled: Boolean(appId) });
+  const adapters = trpc.platform.adapters.useQuery();
+  const [exSource, setExSource] = useState<string>("revenue");
   const refetch = () => {
     queue.refetch();
     detail.refetch();
@@ -130,20 +132,39 @@ function WorkInner() {
                                 onClick={() => step.mutate({ stepId: s.id, status: "rejected", remarks })}>
                                 <XCircle size={14} aria-hidden /> {t("work.reject", "Reject")}
                               </button>
-                              <button className="gov-btn gov-btn--ghost" disabled={exchange.isPending}
-                                onClick={() =>
-                                  exchange.mutate({
-                                    applicationId: detail.data!.application.id,
-                                    connectorId: 1,
-                                    source: s.stepKey === "address" || s.stepKey === "premises" ? "municipal" : "revenue",
-                                    payload:
-                                      s.stepKey === "address" || s.stepKey === "premises"
-                                        ? { fullAddress: detail.data!.application.address }
-                                        : { citizen_name: detail.data!.application.businessName, dob: "1990-01-01" },
-                                  })
-                                }>
-                                <Network size={14} aria-hidden /> {t("work.normalize", "Normalise exchange")}
-                              </button>
+                              <span className="inline-flex items-center gap-1.5">
+                                <select
+                                  className="gov-input"
+                                  style={{ width: "auto" }}
+                                  value={exSource}
+                                  onChange={e => setExSource(e.target.value)}
+                                  aria-label={t("work.adapter", "Connector adapter")}
+                                >
+                                  {(adapters.data ?? []).map(a => (
+                                    <option key={a.system} value={a.system}>{a.label}</option>
+                                  ))}
+                                </select>
+                                <button className="gov-btn gov-btn--ghost" disabled={exchange.isPending}
+                                  onClick={() => {
+                                    const app = detail.data!.application;
+                                    const payloadBySource: Record<string, Record<string, string>> = {
+                                      revenue: { citizen_name: app.businessName, dob: "1990-01-01" },
+                                      municipal: { fullAddress: app.address },
+                                      digilocker: { doc_type: "identity", issuer: "UIDAI", name: app.businessName },
+                                      aadhaar: { name: app.businessName, dob: "1990-01-01", address: app.address },
+                                      pan: { pan: "ABCDE1234F", name: app.businessName },
+                                      gstn: { gstin: "27ABCDE1234F1Z5", legal_name: app.businessName },
+                                    };
+                                    exchange.mutate({
+                                      applicationId: app.id,
+                                      connectorId: 1,
+                                      source: exSource as never,
+                                      payload: payloadBySource[exSource] ?? {},
+                                    });
+                                  }}>
+                                  <Network size={14} aria-hidden /> {t("work.normalize", "Normalise exchange")}
+                                </button>
+                              </span>
                             </div>
                           </div>
                         )}

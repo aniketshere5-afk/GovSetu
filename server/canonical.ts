@@ -101,7 +101,120 @@ export function runConnector(
       sourceRecordRetained: true,
     };
   }
+  if (system === "digilocker" && action === "fetch") {
+    return {
+      sourceSystem: "DigiLocker",
+      canonical: {
+        verificationStatus: "verified",
+        documentType: payload.doc_type || "identity",
+        issuer: payload.issuer || "UIDAI",
+        name: payload.name,
+      },
+      sourceRecordRetained: true,
+    };
+  }
+  if (system === "aadhaar" && action === "ekyc") {
+    return {
+      sourceSystem: "Aadhaar e-KYC (UIDAI)",
+      canonical: {
+        verificationStatus: "verified",
+        name: payload.name,
+        dateOfBirth: toIsoDate(payload.dob),
+        addressVerified: Boolean(payload.address),
+      },
+      sourceRecordRetained: true,
+    };
+  }
+  if (system === "pan" && action === "verify") {
+    return {
+      sourceSystem: "Income Tax PAN Registry",
+      canonical: {
+        verificationStatus: payload.pan ? "verified" : "not_found",
+        panLast4: payload.pan ? String(payload.pan).slice(-4) : null,
+        name: payload.name,
+      },
+      sourceRecordRetained: true,
+    };
+  }
+  if (system === "gstn" && action === "verify") {
+    return {
+      sourceSystem: "Goods & Services Tax Network",
+      canonical: {
+        verificationStatus: payload.gstin ? "active" : "not_found",
+        gstinLast4: payload.gstin ? String(payload.gstin).slice(-4) : null,
+        legalName: payload.legal_name,
+      },
+      sourceRecordRetained: true,
+    };
+  }
   return null;
+}
+
+/**
+ * Registry of connector adapters SetuGov can normalise against. Drives the
+ * "onboard a department" wizard and the published OpenAPI contract.
+ */
+export const ADAPTERS = [
+  { system: "revenue", action: "verify", label: "Revenue e-Verify", sourceFields: ["citizen_name", "dob"], canonicalFields: ["name", "dateOfBirth", "verificationStatus"] },
+  { system: "municipal", action: "address", label: "Municipal Property Ledger", sourceFields: ["fullAddress"], canonicalFields: ["registeredAddress", "verificationStatus"] },
+  { system: "registry", action: "decision", label: "National Business Register", sourceFields: ["applicationRef"], canonicalFields: ["decision", "registrationNumber"] },
+  { system: "digilocker", action: "fetch", label: "DigiLocker", sourceFields: ["doc_type", "issuer", "name"], canonicalFields: ["documentType", "issuer", "name", "verificationStatus"] },
+  { system: "aadhaar", action: "ekyc", label: "Aadhaar e-KYC (UIDAI)", sourceFields: ["name", "dob", "address"], canonicalFields: ["name", "dateOfBirth", "addressVerified", "verificationStatus"] },
+  { system: "pan", action: "verify", label: "Income Tax PAN", sourceFields: ["pan", "name"], canonicalFields: ["panLast4", "name", "verificationStatus"] },
+  { system: "gstn", action: "verify", label: "GST Network", sourceFields: ["gstin", "legal_name"], canonicalFields: ["gstinLast4", "legalName", "verificationStatus"] },
+] as const;
+
+/** Minimal OpenAPI 3 document describing the canonical connector contract. */
+export function connectorOpenApiSpec() {
+  const paths: Record<string, unknown> = {};
+  for (const a of ADAPTERS) {
+    paths[`/api/connectors/${a.system}/${a.action}`] = {
+      post: {
+        summary: `${a.label} — normalise a source payload to the SetuGov canonical shape`,
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: Object.fromEntries(a.sourceFields.map(f => [f, { type: "string" }])),
+              },
+            },
+          },
+        },
+        responses: {
+          "200": {
+            description: "Canonical response; the department retains the source record.",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    sourceSystem: { type: "string" },
+                    sourceRecordRetained: { type: "boolean", enum: [true] },
+                    canonical: {
+                      type: "object",
+                      properties: Object.fromEntries(a.canonicalFields.map(f => [f, {}])),
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    };
+  }
+  return {
+    openapi: "3.0.3",
+    info: {
+      title: "SetuGov Connector Contract",
+      version: "1.0.0",
+      description:
+        "Every department connector accepts a source-shaped JSON payload and returns a canonical response. SetuGov stores only canonical field names and a payload hash — never source values.",
+    },
+    paths,
+  };
 }
 
 /** Field names only — never values — for an integration-event record. */

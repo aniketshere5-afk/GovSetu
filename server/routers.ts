@@ -30,7 +30,8 @@ import { grievances } from "../drizzle/schema";
 import { ensureSeeded } from "./seed";
 import { writeAudit, verifyAuditChain } from "./audit";
 import { transitionStep, type StepAction } from "./workflow";
-import { runConnector, normalizeCanonical, hashPayload, fieldNamesOf } from "./canonical";
+import { runConnector, normalizeCanonical, hashPayload, fieldNamesOf, ADAPTERS, connectorOpenApiSpec } from "./canonical";
+import { vaultDocuments } from "../drizzle/schema";
 import { assertScopeGranted } from "./consent";
 import { listNotifications, markNotificationRead } from "./notify";
 
@@ -296,12 +297,15 @@ export const appRouter = router({
         return { success: true };
       }),
 
+    adapters: publicProcedure.query(() => ADAPTERS),
+    connectorSpec: publicProcedure.query(() => connectorOpenApiSpec()),
+
     connectorExchange: officialProcedure
       .input(
         z.object({
           applicationId: z.number(),
           connectorId: z.number(),
-          source: z.enum(["revenue", "municipal"]),
+          source: z.enum(["revenue", "municipal", "digilocker", "aadhaar", "pan", "gstn"]),
           payload: z.record(z.string(), z.string()),
         }),
       )
@@ -309,15 +313,27 @@ export const appRouter = router({
         const db = await getDb();
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
 
-        const requiredScope = input.source === "revenue" ? "identity" : "registered address";
+        const scopeBySource: Record<string, string> = {
+          revenue: "identity",
+          municipal: "registered address",
+          digilocker: "identity",
+          aadhaar: "identity",
+          pan: "identity",
+          gstn: "business profile",
+        };
+        const requiredScope = scopeBySource[input.source] ?? "identity";
         await assertScopeGranted(input.applicationId, requiredScope, {
           departmentId: ctx.user.departmentId,
           purpose: `${input.source} verification exchange`,
         });
 
-        const action = input.source === "revenue" ? "verify" : "address";
-        const connectorResult = runConnector(input.source, action, input.payload);
-        const normalized = connectorResult?.canonical ?? normalizeCanonical(input.source, input.payload);
+        const adapter = ADAPTERS.find(a => a.system === input.source);
+        const connectorResult = adapter ? runConnector(adapter.system, adapter.action, input.payload) : null;
+        const normalized =
+          connectorResult?.canonical ??
+          (input.source === "revenue" || input.source === "municipal"
+            ? normalizeCanonical(input.source, input.payload)
+            : (input.payload as Record<string, unknown>));
 
         // Store field names + a hash only — never the values.
         await db.insert(integrationEvents).values({
@@ -394,6 +410,34 @@ export const appRouter = router({
       .input(z.object({ id: z.number() }))
       .mutation(async ({ ctx, input }) => {
         await markNotificationRead(ctx.user.id, input.id);
+        return { success: true };
+      }),
+
+    vault: protectedProcedure.query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return [];
+      return db.select().from(vaultDocuments).where(eq(vaultDocuments.ownerId, ctx.user.id)).orderBy(desc(vaultDocuments.createdAt));
+    }),
+    addVaultDocument: protectedProcedure
+      .input(z.object({ documentType: z.string().min(2), fileName: z.string().min(1), referenceUrl: z.string().min(3) }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+        await db.insert(vaultDocuments).values({
+          ownerId: ctx.user.id,
+          documentType: input.documentType,
+          fileName: input.fileName,
+          referenceUrl: input.referenceUrl,
+        });
+        await writeAudit(ctx.user.id, ctx.user.role, "vault.added", "vault_document", input.documentType);
+        return { success: true };
+      }),
+    deleteVaultDocument: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+        await db.delete(vaultDocuments).where(and(eq(vaultDocuments.id, input.id), eq(vaultDocuments.ownerId, ctx.user.id)));
         return { success: true };
       }),
 
@@ -483,6 +527,42 @@ export const appRouter = router({
         return { success: true };
       }),
     verifyAudit: adminProcedure.query(() => verifyAuditChain()),
+    auditProof: adminProcedure.query(async () => {
+      const db = await getDb();
+      const chain = await verifyAuditChain();
+      const rows = db ? await db.select().from(auditLogs).orderBy(auditLogs.id) : [];
+      return {
+        generatedAt: new Date().toISOString(),
+        verification: chain,
+        entries: rows.map(r => ({
+          id: r.id,
+          createdAt: r.createdAt,
+          actorId: r.actorId,
+          actorRole: r.actorRole,
+          action: r.action,
+          entityType: r.entityType,
+          entityId: r.entityId,
+          metadata: r.metadata,
+          prevHash: r.prevHash,
+          rowHash: r.rowHash,
+        })),
+      };
+    }),
+    addConnector: adminProcedure
+      .input(z.object({ departmentId: z.number(), name: z.string().min(2), endpoint: z.string().min(3), systemType: z.string().min(2) }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+        await db.insert(connectors).values({
+          departmentId: input.departmentId,
+          name: input.name,
+          endpoint: input.endpoint,
+          systemType: input.systemType,
+          status: "healthy",
+        });
+        await writeAudit(ctx.user.id, ctx.user.role, "connector.onboarded", "connector", input.name, `${input.endpoint} · dept ${input.departmentId}`);
+        return { success: true };
+      }),
     analytics: adminProcedure.query(() => platformAnalytics()),
     grievances: adminProcedure.query(async () => {
       const db = await getDb();

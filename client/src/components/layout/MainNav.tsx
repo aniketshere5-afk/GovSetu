@@ -11,6 +11,7 @@ const ITEMS: NavItem[] = [
   { href: "/services", key: "services" },
   { href: "/track", key: "track" },
   { href: "/consent", key: "consent", roles: ["user"] },
+  { href: "/vault", key: "vault", roles: ["user"] },
   { href: "/work", key: "work", roles: ["official", "admin"] },
   { href: "/admin", key: "admin", roles: ["admin"] },
 ];

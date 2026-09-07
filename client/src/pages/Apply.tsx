@@ -12,6 +12,7 @@ function ApplyInner() {
   const { slug = "" } = useParams();
   const [, navigate] = useLocation();
   const detail = trpc.platform.serviceDetail.useQuery({ slug }, { enabled: Boolean(slug) });
+  const vault = trpc.platform.vault.useQuery();
   const create = trpc.platform.createApplication.useMutation({
     onSuccess: res => {
       toast.success(t("apply.submitted", { defaultValue: "Application {{n}} submitted", n: res.applicationNumber }));
@@ -102,16 +103,35 @@ function ApplyInner() {
                   {t("apply.docHint", "Provide a locator (DigiLocker URI, department reference, or URL). SetuGov stores the reference, not the file.")}
                 </p>
                 <div className="space-y-3">
-                  {requiredDocuments.map(doc => (
-                    <Field key={doc} label={doc}>
-                      <input
-                        className="gov-input"
-                        placeholder="digilocker://… or department://…"
-                        value={docRefs[doc] ?? ""}
-                        onChange={e => setDocRefs({ ...docRefs, [doc]: e.target.value })}
-                      />
-                    </Field>
-                  ))}
+                  {requiredDocuments.map(doc => {
+                    const matches = (vault.data ?? []).filter(
+                      v => v.documentType.toLowerCase() === doc.toLowerCase() || doc.toLowerCase().includes(v.documentType.toLowerCase()),
+                    );
+                    return (
+                      <Field key={doc} label={doc}>
+                        <input
+                          className="gov-input"
+                          placeholder="digilocker://… or department://…"
+                          value={docRefs[doc] ?? ""}
+                          onChange={e => setDocRefs({ ...docRefs, [doc]: e.target.value })}
+                        />
+                        {matches.length > 0 && (
+                          <div className="mt-1 flex flex-wrap gap-1.5">
+                            {matches.map(m => (
+                              <button
+                                key={m.id}
+                                type="button"
+                                className="border border-[color:var(--border)] px-2 py-0.5 text-[0.7rem]"
+                                onClick={() => setDocRefs({ ...docRefs, [doc]: m.referenceUrl ?? "" })}
+                              >
+                                {t("apply.fromVault", "From vault")}: {m.referenceUrl?.slice(0, 28)}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </Field>
+                    );
+                  })}
                 </div>
               </div>
               <div>
