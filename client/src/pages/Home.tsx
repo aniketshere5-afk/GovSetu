@@ -3,7 +3,7 @@ import { Link } from "wouter";
 import { Building2, FileText, LayoutGrid, ListChecks, ScrollText, ShieldCheck } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { startLogin } from "@/const";
+import { signInEntry } from "@/lib/authEntry";
 import { AppShell } from "@/components/layout/AppShell";
 import { NoticeTicker } from "@/components/layout/NoticeTicker";
 
@@ -44,7 +44,7 @@ export default function Home() {
                 {t("home.startApplication")}
               </Link>
             ) : (
-              <button className="gov-btn gov-btn--primary" onClick={() => startLogin()}>
+              <button className="gov-btn gov-btn--primary" onClick={() => signInEntry()}>
                 {t("home.startApplication")}
               </button>
             )}

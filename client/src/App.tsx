@@ -15,6 +15,7 @@ import Work from "./pages/Work";
 import Admin from "./pages/Admin";
 import Grievance from "./pages/Grievance";
 import Info from "./pages/Info";
+import DemoLogin from "./pages/DemoLogin";
 import NotFound from "./pages/NotFound";
 
 function Router() {
@@ -31,6 +32,7 @@ function Router() {
       <Route path="/work" component={Work} />
       <Route path="/admin" component={Admin} />
       <Route path="/grievance" component={Grievance} />
+      <Route path="/demo-login" component={DemoLogin} />
       <Route path="/accessibility">{() => <Info slug="accessibility" />}</Route>
       <Route path="/help">{() => <Info slug="help" />}</Route>
       <Route path="/privacy">{() => <Info slug="privacy" />}</Route>

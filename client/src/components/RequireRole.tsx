@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "wouter";
-import { startLogin } from "@/const";
+import { signInEntry } from "@/lib/authEntry";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { AppShell } from "@/components/layout/AppShell";
 
@@ -30,7 +30,7 @@ export function RequireRole({ roles, children }: { roles: Role[]; children: Reac
           <div className="gov-panel__head">{t("guard.signInRequired")}</div>
           <div className="gov-panel__body">
             <p className="text-sm text-muted-foreground">{t("guard.signInBody")}</p>
-            <button className="gov-btn gov-btn--primary mt-4" onClick={() => startLogin()}>
+            <button className="gov-btn gov-btn--primary mt-4" onClick={() => signInEntry()}>
               {t("nav.signIn")}
             </button>
           </div>

@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { Link, useLocation } from "wouter";
 import { LogOut } from "lucide-react";
-import { startLogin } from "@/const";
+import { signInEntry } from "@/lib/authEntry";
 import { useAuth } from "@/_core/hooks/useAuth";
 
 type NavItem = { href: string; key: string; roles?: Array<"user" | "official" | "admin"> };
@@ -41,7 +41,7 @@ export function MainNav() {
             &nbsp;{user.name?.split(" ")[0] ?? t("nav.account")} · {t("nav.signOut")}
           </button>
         ) : (
-          <button type="button" className="gov-nav__login" style={{ border: 0 }} onClick={() => startLogin()}>
+          <button type="button" className="gov-nav__login" style={{ border: 0 }} onClick={() => signInEntry()}>
             {t("nav.signIn")}
           </button>
         )}

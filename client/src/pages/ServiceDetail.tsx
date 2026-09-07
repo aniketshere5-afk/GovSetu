@@ -3,7 +3,7 @@ import { Link, useParams } from "wouter";
 import { ArrowRight, CheckCircle2, FileText } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { startLogin } from "@/const";
+import { signInEntry } from "@/lib/authEntry";
 import { AppShell } from "@/components/layout/AppShell";
 
 export default function ServiceDetail() {
@@ -104,7 +104,7 @@ export default function ServiceDetail() {
                   <ArrowRight size={15} aria-hidden />
                 </Link>
               ) : (
-                <button className="gov-btn gov-btn--primary mt-4 w-full justify-center" onClick={() => startLogin()}>
+                <button className="gov-btn gov-btn--primary mt-4 w-full justify-center" onClick={() => signInEntry()}>
                   {t("serviceDetail.signInToApply", "Sign in to apply")}
                 </button>
               )}

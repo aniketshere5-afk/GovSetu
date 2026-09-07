@@ -8,16 +8,19 @@ import { isSecureRequest } from "./cookies";
 import { sdk } from "./sdk";
 
 /**
- * Development-only sign-in. The hosted Manus OAuth portal is not available
- * locally, and real OAuth logins can only ever be role `user`, so the
- * official/admin experiences would be unreachable without this.
+ * Role sign-in without the hosted OAuth portal. Real OAuth logins can only ever
+ * be role `user`, so the official/admin experiences would otherwise be
+ * unreachable in local dev and in a standalone demo deployment.
  *
- * Gated to NODE_ENV === "development"; never registered in production.
+ * Registered when NODE_ENV !== "production", OR when DEMO_AUTH="1" is set
+ * explicitly (used for the hosted SIH demo, which has only seeded sample data).
+ * Never enable DEMO_AUTH on a deployment holding real data.
  *
  *   GET /api/auth/dev?role=user|official|admin[&dept=REV|LAD|BR]
  */
 export function registerDevAuthRoutes(app: Express) {
-  if (process.env.NODE_ENV === "production") return;
+  const enabled = process.env.NODE_ENV !== "production" || process.env.DEMO_AUTH === "1";
+  if (!enabled) return;
 
   app.get("/api/auth/dev", async (req: Request, res: Response) => {
     const role = String(req.query.role ?? "user");
