@@ -4,10 +4,13 @@ import { createServer } from "http";
 import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
+import { registerDevAuthRoutes } from "./devAuth";
 import { registerStorageProxy } from "./storageProxy";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
+import { ensureSeeded } from "../seed";
+import { runConnector } from "../canonical";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -36,14 +39,14 @@ async function startServer() {
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
   registerStorageProxy(app);
   registerOAuthRoutes(app);
-  // Simulated federated department systems: each endpoint owns its source-shaped payload and returns only a canonical exchange response.
+  registerDevAuthRoutes(app);
+  // Simulated independent department systems. The same logic is used in-process
+  // by the tRPC connectorExchange procedure, so the two can never drift.
   app.post("/api/connectors/:system/:action", (req, res) => {
     const { system, action } = req.params;
-    const payload = req.body || {};
-    if (system === "revenue" && action === "verify") return res.json({ sourceSystem: "Revenue e-Verify Registry", canonical: { verificationStatus: "verified", name: payload.citizen_name || payload.fullName, dateOfBirth: payload.dob || payload.date_of_birth }, sourceRecordRetained: true });
-    if (system === "municipal" && action === "address") return res.json({ sourceSystem: "Municipal Property Ledger", canonical: { verificationStatus: "verified", registeredAddress: payload.fullAddress || payload.address }, sourceRecordRetained: true });
-    if (system === "registry" && action === "decision") return res.json({ sourceSystem: "National Business Register", canonical: { decision: "pending_review", registrationNumber: null }, sourceRecordRetained: true });
-    return res.status(404).json({ error: "Connector route not found" });
+    const result = runConnector(system, action, req.body || {});
+    if (!result) return res.status(404).json({ error: "Connector route not found" });
+    return res.json(result);
   });
   // tRPC API
   app.use(
@@ -69,6 +72,9 @@ async function startServer() {
 
   server.listen(port, () => {
     console.log(`Server running on http://localhost:${port}/`);
+    // Idempotent; guarded by a marker row. Runs once per database at boot so
+    // no request path ever races on seeding.
+    void ensureSeeded();
   });
 }
 

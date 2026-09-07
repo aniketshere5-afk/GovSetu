@@ -5,15 +5,8 @@
     {
       "idx": 0,
       "version": "5",
-      "when": 1788504508705,
-      "tag": "0000_outgoing_loa",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "5",
-      "when": 1788504732759,
-      "tag": "0001_polite_hellcat",
+      "when": 1788792739840,
+      "tag": "0000_setugov_baseline",
       "breakpoints": true
     }
   ]

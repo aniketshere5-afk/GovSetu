@@ -11,6 +11,7 @@ CREATE TABLE `applications` (
 	`status` enum('draft','submitted','in_review','action_required','approved','rejected') NOT NULL DEFAULT 'draft',
 	`currentDepartmentId` int,
 	`submittedAt` timestamp,
+	`decidedAt` timestamp,
 	`createdAt` timestamp NOT NULL DEFAULT (now()),
 	`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
 	CONSTRAINT `applications_id` PRIMARY KEY(`id`),
@@ -25,6 +26,8 @@ CREATE TABLE `audit_logs` (
 	`entityType` varchar(80) NOT NULL,
 	`entityId` varchar(80) NOT NULL,
 	`metadata` text,
+	`prevHash` varchar(64),
+	`rowHash` varchar(64),
 	`createdAt` timestamp NOT NULL DEFAULT (now()),
 	CONSTRAINT `audit_logs_id` PRIMARY KEY(`id`)
 );
@@ -39,6 +42,29 @@ CREATE TABLE `connectors` (
 	`lastCheckedAt` timestamp NOT NULL DEFAULT (now()),
 	`successRate` int NOT NULL DEFAULT 99,
 	CONSTRAINT `connectors_id` PRIMARY KEY(`id`)
+);
+--> statement-breakpoint
+CREATE TABLE `consent_access_log` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`applicationId` int NOT NULL,
+	`departmentId` int,
+	`scope` varchar(80) NOT NULL,
+	`purpose` varchar(180) NOT NULL,
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	CONSTRAINT `consent_access_log_id` PRIMARY KEY(`id`)
+);
+--> statement-breakpoint
+CREATE TABLE `consent_scopes` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`applicationId` int NOT NULL,
+	`applicantId` int NOT NULL,
+	`scope` varchar(80) NOT NULL,
+	`purpose` varchar(180) NOT NULL,
+	`status` enum('granted','revoked') NOT NULL DEFAULT 'granted',
+	`grantedAt` timestamp NOT NULL DEFAULT (now()),
+	`revokedAt` timestamp,
+	`expiresAt` timestamp,
+	CONSTRAINT `consent_scopes_id` PRIMARY KEY(`id`)
 );
 --> statement-breakpoint
 CREATE TABLE `consents` (
@@ -88,8 +114,31 @@ CREATE TABLE `integration_events` (
 	`canonicalSchema` varchar(120) NOT NULL,
 	`status` enum('processed','failed','retrying') NOT NULL DEFAULT 'processed',
 	`payloadSummary` text NOT NULL,
+	`fieldNames` text,
+	`payloadHash` varchar(64),
+	`attempts` int NOT NULL DEFAULT 1,
 	`createdAt` timestamp NOT NULL DEFAULT (now()),
 	CONSTRAINT `integration_events_id` PRIMARY KEY(`id`)
+);
+--> statement-breakpoint
+CREATE TABLE `notifications` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`userId` int NOT NULL,
+	`applicationId` int,
+	`type` varchar(60) NOT NULL,
+	`title` varchar(200) NOT NULL,
+	`body` text,
+	`readAt` timestamp,
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	CONSTRAINT `notifications_id` PRIMARY KEY(`id`)
+);
+--> statement-breakpoint
+CREATE TABLE `seed_markers` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`markerKey` varchar(64) NOT NULL,
+	`appliedAt` timestamp NOT NULL DEFAULT (now()),
+	CONSTRAINT `seed_markers_id` PRIMARY KEY(`id`),
+	CONSTRAINT `seed_markers_markerKey_unique` UNIQUE(`markerKey`)
 );
 --> statement-breakpoint
 CREATE TABLE `service_departments` (
@@ -97,6 +146,10 @@ CREATE TABLE `service_departments` (
 	`serviceId` int NOT NULL,
 	`departmentId` int NOT NULL,
 	`sequence` int NOT NULL,
+	`stepKey` varchar(80) NOT NULL DEFAULT 'verification',
+	`stepLabel` varchar(160) NOT NULL DEFAULT 'Verification',
+	`requiredScope` varchar(80),
+	`slaDays` int NOT NULL DEFAULT 3,
 	CONSTRAINT `service_departments_id` PRIMARY KEY(`id`)
 );
 --> statement-breakpoint
@@ -114,6 +167,32 @@ CREATE TABLE `services` (
 	CONSTRAINT `services_slug_unique` UNIQUE(`slug`)
 );
 --> statement-breakpoint
+CREATE TABLE `users` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`openId` varchar(64) NOT NULL,
+	`name` text,
+	`email` varchar(320),
+	`loginMethod` varchar(64),
+	`role` enum('user','official','admin') NOT NULL DEFAULT 'user',
+	`departmentId` int,
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+	`lastSignedIn` timestamp NOT NULL DEFAULT (now()),
+	CONSTRAINT `users_id` PRIMARY KEY(`id`),
+	CONSTRAINT `users_openId_unique` UNIQUE(`openId`)
+);
+--> statement-breakpoint
+CREATE TABLE `vault_documents` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`ownerId` int NOT NULL,
+	`documentType` varchar(100) NOT NULL,
+	`fileName` varchar(240) NOT NULL,
+	`storageKey` varchar(255),
+	`referenceUrl` text,
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	CONSTRAINT `vault_documents_id` PRIMARY KEY(`id`)
+);
+--> statement-breakpoint
 CREATE TABLE `workflow_steps` (
 	`id` int AUTO_INCREMENT NOT NULL,
 	`applicationId` int NOT NULL,
@@ -123,11 +202,10 @@ CREATE TABLE `workflow_steps` (
 	`sequence` int NOT NULL,
 	`status` enum('pending','in_progress','completed','blocked','rejected') NOT NULL DEFAULT 'pending',
 	`responsibleRole` varchar(100) NOT NULL,
+	`requiredScope` varchar(80),
 	`remarks` text,
+	`slaDueAt` timestamp,
 	`startedAt` timestamp,
 	`completedAt` timestamp,
 	CONSTRAINT `workflow_steps_id` PRIMARY KEY(`id`)
 );
---> statement-breakpoint
-ALTER TABLE `users` MODIFY COLUMN `role` enum('user','official','admin') NOT NULL DEFAULT 'user';--> statement-breakpoint
-ALTER TABLE `users` ADD `departmentId` int;
