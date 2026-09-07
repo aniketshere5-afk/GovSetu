@@ -1,15 +1,29 @@
-# SetuGov MVP verification
+# SetuGov — verification
 
-The final implementation was validated with `pnpm check`, `pnpm test`, and `pnpm build`. The automated suite passes four tests across authentication, canonical normalization, and admin role boundaries.
+Automated: `pnpm check` (tsc, clean), `pnpm test` (10 tests across auth, canonical
+normalisation, connector contract and admin role boundaries), `pnpm build` (client +
+server bundle). All green.
 
-| Surface | Verification | Result |
+Manual walkthrough against a local MySQL 8.4 database, exercised through the dev
+sign-in route:
+
+| Surface | Check | Result |
 |---|---|---|
-| Citizen | Authenticated preview session temporarily rendered `/operations` as `user`; consent and sharing-history view loaded for `SG-2026-00001`. The owner role was restored afterward. | Pass |
-| Department official | Authenticated preview session temporarily rendered `/operations` as `official` with department `3`; the seeded active case appeared in the server-filtered queue. The owner role was restored afterward. | Pass |
-| Platform administrator | Authenticated preview session rendered `/operations` as `admin`; connector controls, event/audit summary, and editable department/connector configuration loaded. | Pass |
-| Application submission | Guided form includes business fields, consent scopes, and a document-reference field; `createApplication` persists the application, references, consent, workflow route, integration event, and audit entry. | Pass by code/build validation |
-| Official workflow | Review UI exposes complete-and-route, request-action, reject, and normalized exchange actions. Backend transitions the current department, activates the next workflow step, and writes routing events. | Pass by code/build validation |
-| Connector simulation | Independent HTTP routes exist for revenue verification, municipal address lookup, and registry decision; connector exchange invokes the source-specific route and stores only canonical/payload-summary metadata. | Pass |
-| Audit records | Admin UI is read-only for audit entries and server code exposes insert-only audit writes. A `CREATE TRIGGER` attempt was rejected by the managed TiDB deployment; this limitation is documented in `docs/MVP.md`. | Pass with platform limitation recorded |
+| Cold start | 10 concurrent first-load requests during seeding | Pass — idempotent boot-time seed; no duplicate-key errors (previously returned a 500) |
+| Health | `platform.health` | Pass — `{database:"ok", seeded:true}` |
+| Citizen | Service directory → service detail (department journey, SLAs, scopes) → 3-step apply wizard → submit | Pass — application created (`SG-2026-#####`, no collision with the seeded case) |
+| Citizen | Consent ledger: withdraw a scope, then a connector exchange needing it | Pass — exchange rejected with `FORBIDDEN`; access log records granted checks |
+| Citizen | Document vault add / reuse in apply wizard; grievance file + list | Pass |
+| Official | Department queue shows cases routed to the department (incl. onward-routed); milestone complete routes to next department | Pass |
+| Official | Connector-adapter picker (Revenue / Municipal / DigiLocker / Aadhaar / PAN / GSTN) → normalise exchange | Pass — `integration_events` stores canonical field names + SHA-256 only, no PII |
+| Admin | Analytics: status split, per-department open/completed/avg-hours, SLA breach count | Pass |
+| Admin | Audit-chain integrity: verified; editing an `audit_logs` row directly in MySQL | Pass — `verifyAudit` reports `ok:false, brokenAtId:1` |
+| Admin | Connector onboarding form; `Download OpenAPI contract`; `Download verification report` | Pass — endpoints return valid JSON |
+| Admin | Assign a user the `official` role + department | Pass |
+| Themes | light / dark / system via `next-themes` | Pass — both palettes verified in-browser |
+| i18n | English / हिन्दी / मराठी across the citizen and officer surfaces | Pass — selector switches live; info/legal pages fall back to English |
+| Migration | `drizzle-kit migrate` against an empty database | Pass — all 18 tables created |
 
-No department source record is copied into the SetuGov database. The federated layer keeps source-shaped payloads at the simulated department endpoint and records only normalized exchange metadata needed for coordination and auditability.
+No department source record is copied into SetuGov. The federated layer keeps
+source-shaped payloads at the (simulated) department endpoint and stores only the
+coordination metadata and hashes needed for routing and auditability.
