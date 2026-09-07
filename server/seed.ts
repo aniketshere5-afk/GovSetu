@@ -78,6 +78,59 @@ async function doSeed(): Promise<void> {
     ]);
   }
 
+  // Additional services so the catalogue is more than one entry.
+  const extraServices = [
+    {
+      slug: "shops-establishment",
+      name: "Shops & Establishment Registration",
+      description: "Register a shop or commercial establishment under the Shops and Establishments Act.",
+      eligibility: "Any employer operating a shop or commercial establishment in the state.",
+      requiredDocuments: JSON.stringify(["Identity proof", "Proof of address", "Employer declaration"]),
+      expectedDays: 5,
+      route: [
+        { dept: "LAD", stepKey: "premises", stepLabel: "Premises verification", requiredScope: "registered address", slaDays: 3 },
+        { dept: "BR", stepKey: "approval", stepLabel: "Registration approval", requiredScope: "business profile", slaDays: 2 },
+      ],
+    },
+    {
+      slug: "trade-licence",
+      name: "Trade Licence",
+      description: "Obtain a municipal trade licence to carry on a listed trade or business activity.",
+      eligibility: "Any person carrying on a trade listed under the municipal by-laws.",
+      requiredDocuments: JSON.stringify(["Identity proof", "Proof of address", "No-objection certificate"]),
+      expectedDays: 7,
+      route: [
+        { dept: "REV", stepKey: "identity", stepLabel: "Identity & dues check", requiredScope: "identity", slaDays: 2 },
+        { dept: "LAD", stepKey: "premises", stepLabel: "Premises & safety verification", requiredScope: "registered address", slaDays: 3 },
+        { dept: "BR", stepKey: "approval", stepLabel: "Licence approval", requiredScope: "business profile", slaDays: 2 },
+      ],
+    },
+  ];
+  for (const svc of extraServices) {
+    const [exists] = await db.select().from(services).where(eq(services.slug, svc.slug));
+    if (exists) continue;
+    await db.insert(services).values({
+      slug: svc.slug,
+      name: svc.name,
+      description: svc.description,
+      eligibility: svc.eligibility,
+      requiredDocuments: svc.requiredDocuments,
+      expectedDays: svc.expectedDays,
+    });
+    const [created] = await db.select().from(services).where(eq(services.slug, svc.slug));
+    await db.insert(serviceDepartments).values(
+      svc.route.map((r, i) => ({
+        serviceId: created.id,
+        departmentId: depts.find(d => d.code === r.dept)!.id,
+        sequence: i + 1,
+        stepKey: r.stepKey,
+        stepLabel: r.stepLabel,
+        requiredScope: r.requiredScope,
+        slaDays: r.slaDays,
+      })),
+    );
+  }
+
   const [existingConnector] = await db.select().from(connectors).limit(1);
   if (!existingConnector) {
     await db.insert(connectors).values([

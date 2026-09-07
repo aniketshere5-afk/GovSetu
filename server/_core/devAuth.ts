@@ -4,7 +4,7 @@ import * as db from "../db";
 import { getDb } from "../db";
 import { departments } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
-import { getSessionCookieOptions } from "./cookies";
+import { isSecureRequest } from "./cookies";
 import { sdk } from "./sdk";
 
 /**
@@ -50,7 +50,16 @@ export function registerDevAuthRoutes(app: Express) {
     });
 
     const token = await sdk.createSessionToken(openId, { name, expiresInMs: ONE_YEAR_MS });
-    res.cookie(COOKIE_NAME, token, { ...getSessionCookieOptions(req), maxAge: ONE_YEAR_MS });
+    // Local dev is plain http, so SameSite=None (which needs Secure) would be
+    // rejected by the browser. Use Lax here; production OAuth keeps its own opts.
+    const secure = isSecureRequest(req);
+    res.cookie(COOKIE_NAME, token, {
+      httpOnly: true,
+      path: "/",
+      sameSite: secure ? "none" : "lax",
+      secure,
+      maxAge: ONE_YEAR_MS,
+    });
     res.redirect(302, "/");
   });
 }

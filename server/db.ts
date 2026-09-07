@@ -148,6 +148,45 @@ export async function dashboardStats() {
   };
 }
 
+export async function platformAnalytics() {
+  const db = await getDb();
+  if (!db) return { byStatus: [], byDepartment: [], slaBreaches: 0, totalApplications: 0 };
+
+  const [byStatusRows, deptRows, breachRows, [{ total } = { total: 0 }]] = await Promise.all([
+    db.select({ status: applications.status, count: sql<number>`count(*)` }).from(applications).groupBy(applications.status),
+    db
+      .select({
+        departmentId: workflowSteps.departmentId,
+        departmentName: departments.name,
+        open: sql<number>`sum(case when ${workflowSteps.status} in ('pending','in_progress','blocked') then 1 else 0 end)`,
+        completed: sql<number>`sum(case when ${workflowSteps.status} = 'completed' then 1 else 0 end)`,
+        avgHours: sql<number>`avg(case when ${workflowSteps.completedAt} is not null and ${workflowSteps.startedAt} is not null
+          then timestampdiff(hour, ${workflowSteps.startedAt}, ${workflowSteps.completedAt}) end)`,
+      })
+      .from(workflowSteps)
+      .innerJoin(departments, eq(departments.id, workflowSteps.departmentId))
+      .groupBy(workflowSteps.departmentId, departments.name),
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(workflowSteps)
+      .where(and(eq(workflowSteps.status, "in_progress"), sql`${workflowSteps.slaDueAt} is not null and ${workflowSteps.slaDueAt} < now()`)),
+    db.select({ total: sql<number>`count(*)` }).from(applications),
+  ]);
+
+  return {
+    byStatus: byStatusRows.map(r => ({ status: r.status, count: Number(r.count) })),
+    byDepartment: deptRows.map(r => ({
+      departmentId: r.departmentId,
+      departmentName: r.departmentName,
+      open: Number(r.open ?? 0),
+      completed: Number(r.completed ?? 0),
+      avgHours: r.avgHours === null || r.avgHours === undefined ? null : Math.round(Number(r.avgHours) * 10) / 10,
+    })),
+    slaBreaches: Number(breachRows[0]?.count ?? 0),
+    totalApplications: Number(total),
+  };
+}
+
 export async function systemHealth() {
   const db = await getDb();
   if (!db) return { database: "unavailable" as const, error: _dbError, seeded: false, applications: 0 };

@@ -194,6 +194,20 @@ export const notifications = mysqlTable("notifications", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
+export const grievances = mysqlTable("grievances", {
+  id: int("id").autoincrement().primaryKey(),
+  ticketNumber: varchar("ticketNumber", { length: 32 }).notNull().unique(),
+  raisedById: int("raisedById").notNull(),
+  applicationId: int("applicationId"),
+  category: varchar("category", { length: 80 }).notNull(),
+  subject: varchar("subject", { length: 200 }).notNull(),
+  body: text("body").notNull(),
+  status: mysqlEnum("status", ["open", "in_progress", "resolved", "closed"]).default("open").notNull(),
+  response: text("response"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
 /** Idempotency guard so demo seeding runs exactly once per database. */
 export const seedMarkers = mysqlTable("seed_markers", {
   id: int("id").autoincrement().primaryKey(),
@@ -214,3 +228,4 @@ export type Consent = typeof consents.$inferSelect;
 export type ConsentScope = typeof consentScopes.$inferSelect;
 export type Notification = typeof notifications.$inferSelect;
 export type VaultDocument = typeof vaultDocuments.$inferSelect;
+export type Grievance = typeof grievances.$inferSelect;

@@ -350,6 +350,35 @@ h1, h2, h3 { font-weight: 600; color: var(--foreground); line-height: 1.25; }
 .gov-h2 { font-size: 1.05rem; font-weight: 600; padding-bottom: 6px; border-bottom: 2px solid var(--gov-blue);
   display: inline-block; margin: 0 0 14px; }
 
+/* ---- form controls ---- */
+.gov-input {
+  width: 100%; background: var(--surface); color: var(--foreground);
+  border: 1px solid var(--input); border-radius: 2px; padding: 7px 10px; font: inherit; font-size: 0.85rem;
+}
+.gov-input:focus-visible { outline: 2px solid var(--ring); outline-offset: 0; border-color: var(--ring); }
+.gov-input::placeholder { color: var(--muted-foreground); opacity: .7; }
+select.gov-input { appearance: auto; }
+
+/* ---- data table ---- */
+.gov-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+.gov-table th, .gov-table td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--border);
+  vertical-align: top; }
+.gov-table thead th { background: var(--surface-head); font-weight: 600; border-bottom: 1px solid var(--border-strong); }
+.gov-table tbody tr:hover { background: var(--surface-alt); }
+.gov-table__scroll { overflow-x: auto; border: 1px solid var(--border); }
+
+/* ---- vertical milestone timeline ---- */
+.gov-timeline { list-style: none; margin: 0; padding: 0; }
+.gov-timeline li { position: relative; padding: 0 0 18px 26px; }
+.gov-timeline li::before { content: ""; position: absolute; left: 7px; top: 4px; bottom: -4px; width: 2px;
+  background: var(--border); }
+.gov-timeline li:last-child::before { display: none; }
+.gov-timeline__dot { position: absolute; left: 0; top: 2px; width: 16px; height: 16px; border-radius: 50%;
+  border: 2px solid var(--border-strong); background: var(--surface); }
+.gov-timeline li[data-state="completed"] .gov-timeline__dot { background: var(--tri-green); border-color: var(--tri-green); }
+.gov-timeline li[data-state="in_progress"] .gov-timeline__dot { background: var(--tri-saffron); border-color: var(--tri-saffron); }
+.gov-timeline li[data-state="rejected"] .gov-timeline__dot { background: var(--destructive); border-color: var(--destructive); }
+
 /* ---- footer ---- */
 .gov-footer { background: var(--gov-navy); color: #c4cfe2; font-size: 0.82rem; margin-top: 36px; }
 .gov-footer a { color: #c4cfe2; text-decoration: none; }

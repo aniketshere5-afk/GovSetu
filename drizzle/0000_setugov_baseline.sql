@@ -104,6 +104,22 @@ CREATE TABLE `documents` (
 	CONSTRAINT `documents_id` PRIMARY KEY(`id`)
 );
 --> statement-breakpoint
+CREATE TABLE `grievances` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`ticketNumber` varchar(32) NOT NULL,
+	`raisedById` int NOT NULL,
+	`applicationId` int,
+	`category` varchar(80) NOT NULL,
+	`subject` varchar(200) NOT NULL,
+	`body` text NOT NULL,
+	`status` enum('open','in_progress','resolved','closed') NOT NULL DEFAULT 'open',
+	`response` text,
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+	CONSTRAINT `grievances_id` PRIMARY KEY(`id`),
+	CONSTRAINT `grievances_ticketNumber_unique` UNIQUE(`ticketNumber`)
+);
+--> statement-breakpoint
 CREATE TABLE `integration_events` (
 	`id` int AUTO_INCREMENT NOT NULL,
 	`applicationId` int,

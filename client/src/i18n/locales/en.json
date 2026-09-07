@@ -97,5 +97,72 @@
     "operational": "All systems operational",
     "degraded": "Some services degraded",
     "unavailable": "Service unavailable"
+  },
+  "guard": {
+    "signInRequired": "Sign in required",
+    "signInBody": "This section is available to signed-in users. Please sign in to continue.",
+    "noAccess": "You do not have access",
+    "noAccessBody": "Your account role ({{role}}) cannot open this section.",
+    "backHome": "Back to home"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "body": "The page you requested does not exist or may have been moved."
+  },
+  "info": {
+    "accessibility": {
+      "title": "Accessibility Statement",
+      "body": [
+        "SetuGov is committed to ensuring that its services are accessible to all users, including persons with disabilities, in line with the Guidelines for Indian Government Websites (GIGW) and WCAG 2.1 Level AA.",
+        "The site provides keyboard navigation, visible focus indicators, resizable text (A- / A / A+), light, dark and system themes, and semantic landmarks for assistive technologies.",
+        "If you experience any difficulty accessing content, please contact the helpline or file a grievance and we will assist you."
+      ]
+    },
+    "help": {
+      "title": "Help & Support",
+      "body": [
+        "Choose a service from the Service Directory, review the departments and documents involved, and start a single application.",
+        "Track progress from the Track Application page. You can withdraw data-sharing consent at any time from the Consent & Data page.",
+        "For assistance, call the helpline shown in the header or raise a grievance."
+      ]
+    },
+    "privacy": {
+      "title": "Privacy Policy",
+      "body": [
+        "SetuGov coordinates the exchange of information between government departments. Departments remain the authoritative holders of their own records.",
+        "SetuGov stores application details you provide, the consent scopes you grant, coordination metadata and a tamper-evident audit trail. It does not store copies of departmental source records.",
+        "Data is shared with a department only after you grant purpose-limited consent for a specific scope, and only for that purpose."
+      ]
+    },
+    "terms": {
+      "title": "Terms of Use",
+      "body": [
+        "This portal is provided for availing connected government services. Information submitted must be accurate and lawful.",
+        "Misuse, including submission of false information, may lead to rejection of applications and further action under applicable law."
+      ]
+    },
+    "rti": {
+      "title": "Right to Information",
+      "body": [
+        "Requests under the Right to Information Act, 2005 may be filed with the concerned Public Information Officer of the department administering the relevant service.",
+        "SetuGov's audit trail can be used to establish the timeline and status of an application."
+      ]
+    },
+    "sitemap": {
+      "title": "Sitemap",
+      "body": [
+        "Home · Service Directory · Track Application · Consent & Data · Grievance Redressal.",
+        "Department Workspace and Administration are available to authorised officers only."
+      ]
+    },
+    "notices": {
+      "title": "Notices & Circulars",
+      "body": [
+        "Standard operating procedure for connector onboarding published.",
+        "Right to Public Services timelines mapped to workflow milestones.",
+        "Consent access log made visible to citizens on every application.",
+        "Audit trail verification report available for download by administrators."
+      ]
+    }
   }
 }

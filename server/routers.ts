@@ -24,7 +24,9 @@ import {
   demoApplicationDetail,
   dashboardStats,
   systemHealth,
+  platformAnalytics,
 } from "./db";
+import { grievances } from "../drizzle/schema";
 import { ensureSeeded } from "./seed";
 import { writeAudit, verifyAuditChain } from "./audit";
 import { transitionStep, type StepAction } from "./workflow";
@@ -91,6 +93,35 @@ export const appRouter = router({
     departments: publicProcedure.query(async () => {
       const db = await getDb();
       return db ? db.select().from(departments) : [];
+    }),
+    serviceDetail: publicProcedure.input(z.object({ slug: z.string() })).query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return null;
+      const [service] = await db.select().from(services).where(eq(services.slug, input.slug));
+      if (!service) return null;
+      const route = await db
+        .select({
+          sequence: serviceDepartments.sequence,
+          stepKey: serviceDepartments.stepKey,
+          stepLabel: serviceDepartments.stepLabel,
+          requiredScope: serviceDepartments.requiredScope,
+          slaDays: serviceDepartments.slaDays,
+          departmentId: departments.id,
+          departmentName: departments.name,
+          departmentShort: departments.shortName,
+          sourceSystem: departments.sourceSystem,
+        })
+        .from(serviceDepartments)
+        .innerJoin(departments, eq(departments.id, serviceDepartments.departmentId))
+        .where(eq(serviceDepartments.serviceId, service.id))
+        .orderBy(serviceDepartments.sequence);
+      let requiredDocuments: string[] = [];
+      try {
+        requiredDocuments = JSON.parse(service.requiredDocuments);
+      } catch {
+        requiredDocuments = [];
+      }
+      return { service, route, requiredDocuments };
     }),
 
     applications: protectedProcedure.query(async ({ ctx }) =>
@@ -366,6 +397,37 @@ export const appRouter = router({
         return { success: true };
       }),
 
+    myGrievances: protectedProcedure.query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return [];
+      return db.select().from(grievances).where(eq(grievances.raisedById, ctx.user.id)).orderBy(desc(grievances.createdAt));
+    }),
+    fileGrievance: protectedProcedure
+      .input(
+        z.object({
+          category: z.string().min(2),
+          subject: z.string().min(4),
+          body: z.string().min(10),
+          applicationId: z.number().optional(),
+        }),
+      )
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+        const [{ maxId } = { maxId: 0 }] = await db.select({ maxId: sql<number>`coalesce(max(${grievances.id}), 0)` }).from(grievances);
+        const ticketNumber = `GRV-${new Date().getFullYear()}-${String(Number(maxId) + 1).padStart(5, "0")}`;
+        await db.insert(grievances).values({
+          ticketNumber,
+          raisedById: ctx.user.id,
+          applicationId: input.applicationId ?? null,
+          category: input.category,
+          subject: input.subject,
+          body: input.body,
+        });
+        await writeAudit(ctx.user.id, ctx.user.role, "grievance.filed", "grievance", ticketNumber);
+        return { ticketNumber };
+      }),
+
     // ---- admin ----
     setConnectorStatus: adminProcedure
       .input(z.object({ connectorId: z.number(), status: z.enum(["healthy", "degraded", "disabled"]) }))
@@ -421,6 +483,21 @@ export const appRouter = router({
         return { success: true };
       }),
     verifyAudit: adminProcedure.query(() => verifyAuditChain()),
+    analytics: adminProcedure.query(() => platformAnalytics()),
+    grievances: adminProcedure.query(async () => {
+      const db = await getDb();
+      if (!db) return [];
+      return db.select().from(grievances).orderBy(desc(grievances.createdAt)).limit(100);
+    }),
+    updateGrievance: adminProcedure
+      .input(z.object({ id: z.number(), status: z.enum(["open", "in_progress", "resolved", "closed"]), response: z.string().optional() }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+        await db.update(grievances).set({ status: input.status, response: input.response }).where(eq(grievances.id, input.id));
+        await writeAudit(ctx.user.id, ctx.user.role, `grievance.${input.status}`, "grievance", String(input.id), input.response ?? null);
+        return { success: true };
+      }),
     users: adminProcedure.query(async () => {
       const db = await getDb();
       if (!db) return [];

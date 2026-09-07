@@ -2,21 +2,40 @@ import { ThemeProvider } from "next-themes";
 import { Route, Switch } from "wouter";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import NotFound from "@/pages/NotFound";
 import ErrorBoundary from "./components/ErrorBoundary";
 import Home from "./pages/Home";
-import Operations from "./pages/Operations";
+import Services from "./pages/Services";
+import ServiceDetail from "./pages/ServiceDetail";
+import Apply from "./pages/Apply";
+import Track from "./pages/Track";
+import ApplicationDetail from "./pages/ApplicationDetail";
+import Consent from "./pages/Consent";
+import Work from "./pages/Work";
+import Admin from "./pages/Admin";
+import Grievance from "./pages/Grievance";
+import Info from "./pages/Info";
+import NotFound from "./pages/NotFound";
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
-      {/* Protected role workspaces — rebuilt in later phases; still reachable now. */}
-      <Route path="/track" component={Operations} />
-      <Route path="/consent" component={Operations} />
-      <Route path="/work" component={Operations} />
-      <Route path="/admin" component={Operations} />
-      <Route path="/operations" component={Operations} />
+      <Route path="/services" component={Services} />
+      <Route path="/services/:slug" component={ServiceDetail} />
+      <Route path="/apply/:slug" component={Apply} />
+      <Route path="/track" component={Track} />
+      <Route path="/applications/:id" component={ApplicationDetail} />
+      <Route path="/consent" component={Consent} />
+      <Route path="/work" component={Work} />
+      <Route path="/admin" component={Admin} />
+      <Route path="/grievance" component={Grievance} />
+      <Route path="/accessibility">{() => <Info slug="accessibility" />}</Route>
+      <Route path="/help">{() => <Info slug="help" />}</Route>
+      <Route path="/privacy">{() => <Info slug="privacy" />}</Route>
+      <Route path="/terms">{() => <Info slug="terms" />}</Route>
+      <Route path="/rti">{() => <Info slug="rti" />}</Route>
+      <Route path="/sitemap">{() => <Info slug="sitemap" />}</Route>
+      <Route path="/notices">{() => <Info slug="notices" />}</Route>
       <Route component={NotFound} />
     </Switch>
   );
