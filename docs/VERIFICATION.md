@@ -1,8 +1,26 @@
 # SetuGov — verification
 
-Automated: `pnpm check` (tsc, clean), `pnpm test` (10 tests across auth, canonical
-normalisation, connector contract and admin role boundaries), `pnpm build` (client +
-server bundle). All green.
+Automated:
+
+- `pnpm check` — tsc, clean
+- `pnpm test` — 10 DB-free unit tests (auth, canonical normalisation, connector
+  contract, admin role boundaries); the DB-backed suite is skipped
+- `pnpm build` — client + server bundle
+- `pnpm test:e2e` (needs a `DATABASE_URL`) — 8 tests driving the full journey
+  against a real database:
+
+  ```
+  DATABASE_URL='mysql://setugov:setugov@127.0.0.1:3307/setugov_e2e' pnpm exec drizzle-kit migrate
+  DATABASE_URL='mysql://setugov:setugov@127.0.0.1:3307/setugov_e2e' pnpm test:e2e
+  ```
+
+  Covered: citizen submit + routing; cross-tenant read denied; department queue
+  visibility; connector exchange blocked while a consent scope is withdrawn, then
+  allowed; integration event stores only field names + a SHA-256 hash (asserts no
+  PII in the row); milestone completion routing through to approval; audit-chain
+  integrity + analytics after approval; citizen-visible access log.
+
+All green.
 
 Manual walkthrough against a local MySQL 8.4 database, exercised through the dev
 sign-in route:
