@@ -22,16 +22,47 @@ import {
 let _db: ReturnType<typeof drizzle> | null = null;
 let _dbError: string | null = null;
 
+/** Accept any of the common names a host injects for a MySQL connection. */
+export function resolveDatabaseUrl(): string {
+  return (
+    process.env.DATABASE_URL ||
+    process.env.MYSQL_URL ||
+    process.env.MYSQL_PUBLIC_URL ||
+    ""
+  );
+}
+
 export async function getDb() {
-  if (!_db && process.env.DATABASE_URL) {
+  const url = resolveDatabaseUrl();
+  if (!_db && url) {
     try {
-      _db = drizzle(process.env.DATABASE_URL);
+      _db = drizzle(url);
     } catch (error) {
       _dbError = String(error);
       console.warn("[Database] Failed to connect:", error);
     }
   }
   return _db;
+}
+
+/**
+ * Apply pending migrations at boot. Makes a fresh deployment self-provisioning:
+ * setting DATABASE_URL is enough — no separate migrate step required. Safe to
+ * run every boot (drizzle tracks applied migrations in __drizzle_migrations).
+ */
+export async function runMigrations() {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] DATABASE_URL not set; skipping migrations");
+    return;
+  }
+  try {
+    const { migrate } = await import("drizzle-orm/mysql2/migrator");
+    await migrate(db, { migrationsFolder: `${process.cwd()}/drizzle` });
+    console.log("[Database] migrations up to date");
+  } catch (error) {
+    console.error("[Database] migration failed:", error);
+  }
 }
 
 export async function upsertUser(user: InsertUser): Promise<void> {

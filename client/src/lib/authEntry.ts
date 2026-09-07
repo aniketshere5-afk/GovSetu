@@ -1,7 +1,13 @@
 import { startLogin } from "@/const";
 
-/** Whether the hosted demo role-picker is enabled (set at build time). */
-export const DEMO_AUTH = import.meta.env.VITE_DEMO_AUTH === "1";
+/**
+ * Use the demo role-picker instead of OAuth when explicitly asked
+ * (VITE_DEMO_AUTH=1) or when a production build has no OAuth portal configured
+ * (a standalone SIH demo deployment).
+ */
+export const DEMO_AUTH =
+  import.meta.env.VITE_DEMO_AUTH === "1" ||
+  (import.meta.env.PROD && !import.meta.env.VITE_OAUTH_PORTAL_URL);
 
 /**
  * Begin sign-in. In a normal deployment this starts the OAuth flow; in the

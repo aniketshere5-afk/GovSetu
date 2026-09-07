@@ -1,8 +1,9 @@
 import { defineConfig } from "drizzle-kit";
 
-const connectionString = process.env.DATABASE_URL;
+const connectionString =
+  process.env.DATABASE_URL || process.env.MYSQL_URL || process.env.MYSQL_PUBLIC_URL;
 if (!connectionString) {
-  throw new Error("DATABASE_URL is required to run drizzle commands");
+  throw new Error("DATABASE_URL (or MYSQL_URL) is required to run drizzle commands");
 }
 
 export default defineConfig({

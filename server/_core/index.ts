@@ -10,6 +10,7 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { ensureSeeded } from "../seed";
+import { runMigrations } from "../db";
 import { runConnector } from "../canonical";
 
 function isPortAvailable(port: number): Promise<boolean> {
@@ -70,10 +71,11 @@ async function startServer() {
     console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
   }
 
-  server.listen(port, () => {
+  server.listen(port, async () => {
     console.log(`Server running on http://localhost:${port}/`);
-    // Idempotent; guarded by a marker row. Runs once per database at boot so
-    // no request path ever races on seeding.
+    // Self-provision on boot: apply migrations, then seed demo data (both are
+    // idempotent). A fresh deployment only needs DATABASE_URL.
+    await runMigrations();
     void ensureSeeded();
   });
 }

@@ -5,6 +5,7 @@ import { getDb } from "../db";
 import { departments } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
 import { isSecureRequest } from "./cookies";
+import { DEMO_MODE } from "./env";
 import { sdk } from "./sdk";
 
 /**
@@ -19,7 +20,9 @@ import { sdk } from "./sdk";
  *   GET /api/auth/dev?role=user|official|admin[&dept=REV|LAD|BR]
  */
 export function registerDevAuthRoutes(app: Express) {
-  const enabled = process.env.NODE_ENV !== "production" || process.env.DEMO_AUTH === "1";
+  // Enabled in local dev, or on any deployment with no OAuth portal configured
+  // (a standalone demo), or when DEMO_AUTH=1 is set explicitly.
+  const enabled = process.env.NODE_ENV !== "production" || DEMO_MODE;
   if (!enabled) return;
 
   app.get("/api/auth/dev", async (req: Request, res: Response) => {
