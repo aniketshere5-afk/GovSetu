@@ -1,0 +1,101 @@
+{
+  "brand": {
+    "name": "SetuGov",
+    "hiName": "सेतुगव — शासन सेवा सेतु",
+    "tagline": "Unified Government Service Delivery",
+    "govtOf": "Government of Maharashtra"
+  },
+  "common": {
+    "viewAll": "View all",
+    "loading": "Loading…"
+  },
+  "idbar": {
+    "skipToMain": "Skip to main content",
+    "screenReader": "Screen reader access",
+    "language": "Language",
+    "theme": "Theme",
+    "textSize": "Text size",
+    "decreaseText": "Decrease text size",
+    "resetText": "Reset text size",
+    "increaseText": "Increase text size",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "themeSystem": "System"
+  },
+  "masthead": {
+    "helpline": "Helpline"
+  },
+  "nav": {
+    "primary": "Primary navigation",
+    "home": "Home",
+    "services": "Services",
+    "track": "Track Application",
+    "consent": "Consent & Data",
+    "work": "Department Workspace",
+    "admin": "Administration",
+    "signIn": "Login",
+    "signOut": "Logout",
+    "account": "Account"
+  },
+  "ticker": {
+    "label": "Announcements",
+    "items": [
+      "Business Registration is now processed through a single connected journey across three departments.",
+      "Citizens can withdraw data-sharing consent for any application at any time.",
+      "Department connector health is published on the Administration dashboard.",
+      "New: per-scope consent ledger and tamper-evident audit trail."
+    ]
+  },
+  "home": {
+    "bannerTitle": "One application. The right departments. A clear decision.",
+    "bannerText": "Apply for a government service once. SetuGov routes it to every department that must act, and each verifies only the information you have consented to share.",
+    "startApplication": "Start an Application",
+    "trackApplication": "Track an Application",
+    "servicesTitle": "Online Services",
+    "serviceMeta": "Indicative timeline: {{days}} working days",
+    "allServices": "All Services",
+    "allServicesMeta": "Browse the full service directory",
+    "dashboardTitle": "Service Dashboard",
+    "statActive": "Active applications",
+    "statApproved": "Approved",
+    "statAvgDays": "Avg. days to decision",
+    "statConnected": "Connected departments",
+    "noticesTitle": "Notices & Circulars",
+    "noticesItems": [
+      { "date": "05 Sep 2026", "text": "Standard operating procedure for connector onboarding published." },
+      { "date": "29 Aug 2026", "text": "Right to Public Services timelines mapped to workflow milestones." },
+      { "date": "18 Aug 2026", "text": "Consent access log made visible to citizens on every application." },
+      { "date": "07 Aug 2026", "text": "Audit trail verification report available for download by administrators." }
+    ],
+    "howTitle": "How SetuGov Works",
+    "step1": "Apply once — Fill one guided form and choose exactly which information each department may use.",
+    "step2": "Departments coordinate — Independent systems exchange only normalised, purpose-limited data through connector contracts.",
+    "step3": "Track every step — Follow a single timeline across departments with remarks, timestamps and data-sharing history.",
+    "trustConsent": "Consent is purpose-limited and per-scope, and can be withdrawn at any time.",
+    "trustAudit": "Every action is written to a tamper-evident, hash-chained audit log."
+  },
+  "footer": {
+    "about": "About SetuGov",
+    "aboutText": "SetuGov connects independent government systems so a citizen applies once and departments exchange only the data they are permitted to see.",
+    "quickLinks": "Quick Links",
+    "policies": "Policies",
+    "contact": "Contact",
+    "rti": "Right to Information",
+    "accessibility": "Accessibility Statement",
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Use",
+    "sitemap": "Sitemap",
+    "help": "Help & Support",
+    "grievance": "Grievance Redressal",
+    "managedBy": "Website content managed by the Government of Maharashtra.",
+    "developedBy": "Designed, developed and hosted as a Smart India Hackathon prototype.",
+    "copyright": "© 2026 Government of Maharashtra. All rights reserved.",
+    "lastUpdated": "Last updated",
+    "bestViewed": "Best viewed at 1280 × 800 in a current browser."
+  },
+  "status": {
+    "operational": "All systems operational",
+    "degraded": "Some services degraded",
+    "unavailable": "Service unavailable"
+  }
+}
