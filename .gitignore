@@ -116,3 +116,7 @@ node_modules/
 .env
 .manus-logs/
 *.log
+
+
+# Local file uploads (document vault)
+uploads/

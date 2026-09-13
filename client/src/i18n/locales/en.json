@@ -7,7 +7,8 @@
   },
   "common": {
     "viewAll": "View all",
-    "loading": "Loading…"
+    "loading": "Loading…",
+    "or": "or"
   },
   "idbar": {
     "skipToMain": "Skip to main content",
@@ -197,8 +198,11 @@
     "businessType": "Entity type",
     "address": "Registered address",
     "contact": "Contact email",
-    "docRefs": "Document references",
-    "docHint": "Provide a locator (DigiLocker URI, department reference, or URL). SetuGov stores the reference, not the file.",
+    "docRefs": "Documents",
+    "docHint": "Upload each document, pick one you already saved to your vault, or paste a DigiLocker/department locator.",
+    "upload": "Upload",
+    "uploading": "…",
+    "uploadFailed": "Upload failed",
     "fromVault": "From vault",
     "consent": "Purpose-limited consent",
     "consentHint": "Each department may use only the data you grant here. You can withdraw any of these later.",
@@ -246,11 +250,16 @@
   },
   "vault": {
     "title": "Document Vault",
-    "intro": "Save a document reference once and reuse it in any future application. SetuGov stores the locator, not the file.",
-    "add": "Add a document reference",
+    "intro": "Upload a document once and reuse it in any future application — or link an existing DigiLocker/department reference instead.",
+    "add": "Add a document",
     "type": "Document type",
-    "reference": "Reference / locator",
-    "save": "Save to vault",
+    "upload": "Upload a file",
+    "chooseFile": "Choose PDF / image (max 15MB)",
+    "uploading": "Uploading…",
+    "uploadFailed": "Upload failed",
+    "viewFile": "View uploaded file",
+    "reference": "Link a reference instead",
+    "save": "Save reference",
     "saved": "Saved documents",
     "added": "Document saved to your vault",
     "delete": "Remove"

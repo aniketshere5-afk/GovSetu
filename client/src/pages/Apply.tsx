@@ -1,11 +1,12 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useParams } from "wouter";
 import { toast } from "sonner";
-import { Check } from "lucide-react";
+import { Check, UploadCloud } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { AppShell } from "@/components/layout/AppShell";
 import { RequireRole } from "@/components/RequireRole";
+import { uploadFile } from "@/lib/upload";
 
 function ApplyInner() {
   const { t } = useTranslation();
@@ -29,7 +30,26 @@ function ApplyInner() {
   const [step, setStep] = useState(0);
   const [form, setForm] = useState({ businessName: "", businessType: "Private Limited", address: "", contact: "" });
   const [docRefs, setDocRefs] = useState<Record<string, string>>({});
+  const [docFileNames, setDocFileNames] = useState<Record<string, string>>({});
+  const [uploadingDoc, setUploadingDoc] = useState<string | null>(null);
+  const fileInputs = useRef<Record<string, HTMLInputElement | null>>({});
   const [granted, setGranted] = useState<Record<string, boolean>>({});
+
+  const handleDocUpload = async (doc: string, file: File | undefined) => {
+    if (!file) return;
+    setUploadingDoc(doc);
+    try {
+      const result = await uploadFile(file);
+      setDocRefs(prev => ({ ...prev, [doc]: result.url }));
+      setDocFileNames(prev => ({ ...prev, [doc]: result.fileName }));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("apply.uploadFailed", "Upload failed"));
+    } finally {
+      setUploadingDoc(null);
+      const input = fileInputs.current[doc];
+      if (input) input.value = "";
+    }
+  };
 
   if (detail.isLoading) {
     return <p className="text-sm text-muted-foreground">{t("common.loading")}</p>;
@@ -54,7 +74,11 @@ function ApplyInner() {
       consentScopes: scopes,
       documents: requiredDocuments
         .filter(d => docRefs[d]?.trim())
-        .map(d => ({ type: d, fileName: `${d.toLowerCase().replace(/\s+/g, "-")}-reference`, referenceUrl: docRefs[d].trim() })),
+        .map(d => ({
+          type: d,
+          fileName: docFileNames[d] ?? `${d.toLowerCase().replace(/\s+/g, "-")}-reference`,
+          referenceUrl: docRefs[d].trim(),
+        })),
     });
   };
 
@@ -98,23 +122,43 @@ function ApplyInner() {
           {step === 1 && (
             <>
               <div>
-                <div className="mb-2 text-sm font-semibold">{t("apply.docRefs", "Document references")}</div>
+                <div className="mb-2 text-sm font-semibold">{t("apply.docRefs", "Documents")}</div>
                 <p className="mb-3 text-xs text-muted-foreground">
-                  {t("apply.docHint", "Provide a locator (DigiLocker URI, department reference, or URL). SetuGov stores the reference, not the file.")}
+                  {t("apply.docHint", "Upload each document, pick one you already saved to your vault, or paste a DigiLocker/department locator.")}
                 </p>
                 <div className="space-y-3">
                   {requiredDocuments.map(doc => {
                     const matches = (vault.data ?? []).filter(
                       v => v.documentType.toLowerCase() === doc.toLowerCase() || doc.toLowerCase().includes(v.documentType.toLowerCase()),
                     );
+                    const isUploaded = docRefs[doc]?.startsWith("/uploads/");
                     return (
                       <Field key={doc} label={doc}>
-                        <input
-                          className="gov-input"
-                          placeholder="digilocker://… or department://…"
-                          value={docRefs[doc] ?? ""}
-                          onChange={e => setDocRefs({ ...docRefs, [doc]: e.target.value })}
-                        />
+                        <div className="flex gap-2">
+                          <input
+                            className="gov-input"
+                            placeholder="digilocker://… or department://…"
+                            value={isUploaded ? (docFileNames[doc] ?? docRefs[doc]) : (docRefs[doc] ?? "")}
+                            readOnly={isUploaded}
+                            onChange={e => setDocRefs({ ...docRefs, [doc]: e.target.value })}
+                          />
+                          <input
+                            ref={el => { fileInputs.current[doc] = el; }}
+                            type="file"
+                            accept="application/pdf,image/png,image/jpeg,image/webp"
+                            className="hidden"
+                            onChange={e => handleDocUpload(doc, e.target.files?.[0])}
+                          />
+                          <button
+                            type="button"
+                            className="gov-btn gov-btn--ghost flex-none"
+                            disabled={uploadingDoc === doc}
+                            onClick={() => fileInputs.current[doc]?.click()}
+                          >
+                            <UploadCloud size={13} aria-hidden />
+                            {uploadingDoc === doc ? t("apply.uploading", "…") : t("apply.upload", "Upload")}
+                          </button>
+                        </div>
                         {matches.length > 0 && (
                           <div className="mt-1 flex flex-wrap gap-1.5">
                             {matches.map(m => (
@@ -122,9 +166,12 @@ function ApplyInner() {
                                 key={m.id}
                                 type="button"
                                 className="border border-[color:var(--border)] px-2 py-0.5 text-[0.7rem]"
-                                onClick={() => setDocRefs({ ...docRefs, [doc]: m.referenceUrl ?? "" })}
+                                onClick={() => {
+                                  setDocRefs({ ...docRefs, [doc]: m.referenceUrl ?? "" });
+                                  setDocFileNames({ ...docFileNames, [doc]: m.fileName });
+                                }}
                               >
-                                {t("apply.fromVault", "From vault")}: {m.referenceUrl?.slice(0, 28)}
+                                {t("apply.fromVault", "From vault")}: {m.fileName}
                               </button>
                             ))}
                           </div>

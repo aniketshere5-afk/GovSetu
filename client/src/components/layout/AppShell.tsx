@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Assistant } from "./Assistant";
 import { Breadcrumbs, type Crumb } from "./Breadcrumbs";
 import { IdentificationBar } from "./IdentificationBar";
 import { MainNav } from "./MainNav";
@@ -29,6 +30,7 @@ export function AppShell({
         )}
       </main>
       <SiteFooter />
+      <Assistant />
     </div>
   );
 }

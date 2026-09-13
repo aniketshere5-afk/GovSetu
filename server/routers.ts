@@ -34,6 +34,7 @@ import { runConnector, normalizeCanonical, hashPayload, fieldNamesOf, ADAPTERS, 
 import { vaultDocuments } from "../drizzle/schema";
 import { assertScopeGranted } from "./consent";
 import { listNotifications, markNotificationRead } from "./notify";
+import { chatWithAssistant, AssistantNotConfiguredError } from "./assistant";
 
 const officialProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (!ctx.user || (ctx.user.role !== "official" && ctx.user.role !== "admin")) {
@@ -75,7 +76,7 @@ export const appRouter = router({
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {
-      ctx.res.clearCookie(COOKIE_NAME, { ...getSessionCookieOptions(ctx.req), maxAge: -1 });
+      ctx.res.clearCookie(COOKIE_NAME, getSessionCookieOptions(ctx.req));
       return { success: true } as const;
     }),
   }),
@@ -95,6 +96,25 @@ export const appRouter = router({
       const db = await getDb();
       return db ? db.select().from(departments) : [];
     }),
+    chat: publicProcedure
+      .input(z.object({
+        history: z.array(z.object({
+          role: z.enum(["user", "assistant"]),
+          content: z.string().min(1).max(2000),
+        })).min(1).max(20),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        try {
+          const reply = await chatWithAssistant(input.history, ctx.user ?? null);
+          return { reply };
+        } catch (error) {
+          if (error instanceof AssistantNotConfiguredError) {
+            throw new TRPCError({ code: "PRECONDITION_FAILED", message: error.message });
+          }
+          console.error("[assistant] chat failed:", error);
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The assistant could not respond right now. Please try again." });
+        }
+      }),
     serviceDetail: publicProcedure.input(z.object({ slug: z.string() })).query(async ({ input }) => {
       const db = await getDb();
       if (!db) return null;

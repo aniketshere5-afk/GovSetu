@@ -14,4 +14,11 @@ export const ENV = {
   isProduction,
   forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
   forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
+  // Portable fallbacks so the assistant also works on a plain deployment (or
+  // local dev) that has no Manus Forge proxy configured — any real Anthropic
+  // or Gemini key works here.
+  anthropicApiKey: process.env.ANTHROPIC_API_KEY ?? "",
+  anthropicModel: process.env.ANTHROPIC_MODEL || "claude-3-5-sonnet-20241022",
+  geminiApiKey: process.env.GEMINI_API_KEY ?? "",
+  geminiModel: process.env.GEMINI_MODEL || "gemini-3.6-flash",
 };

@@ -39,10 +39,15 @@ export function getSessionCookieOptions(
   //       ? hostname
   //       : undefined;
 
+  // SameSite=None requires Secure — on plain http (local dev, or a deployment
+  // without TLS) the browser silently rejects such a Set-Cookie header
+  // entirely, which made clearCookie() on logout a no-op. Fall back to Lax
+  // whenever the request isn't secure, matching what dev sign-in already does.
+  const secure = isSecureRequest(req);
   return {
     httpOnly: true,
     path: "/",
-    sameSite: "none",
-    secure: isSecureRequest(req),
+    sameSite: secure ? "none" : "lax",
+    secure,
   };
 }

@@ -6,6 +6,7 @@ import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
 import { registerDevAuthRoutes } from "./devAuth";
 import { registerStorageProxy } from "./storageProxy";
+import { registerUploadRoutes } from "../upload";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
@@ -41,6 +42,7 @@ async function startServer() {
   registerStorageProxy(app);
   registerOAuthRoutes(app);
   registerDevAuthRoutes(app);
+  registerUploadRoutes(app);
   // Simulated independent department systems. The same logic is used in-process
   // by the tRPC connectorExchange procedure, so the two can never drift.
   app.post("/api/connectors/:system/:action", (req, res) => {
