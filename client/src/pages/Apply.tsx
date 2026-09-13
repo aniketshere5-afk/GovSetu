@@ -219,6 +219,17 @@ function ApplyInner() {
             </dl>
           )}
 
+          {step === 0 && !step0Valid && (
+            <p className="text-xs text-muted-foreground">
+              {t("apply.step0Hint", "Fill in the business name, entity type, a full address (8+ characters) and a valid email to continue.")}
+            </p>
+          )}
+          {step === 1 && !allScopesGranted && (
+            <p className="text-xs text-muted-foreground">
+              {t("apply.step1Hint", "Grant every consent checkbox above to continue — each department can only act once you've allowed it to verify its scope.")}
+            </p>
+          )}
+
           <div className="flex justify-between pt-2">
             <button className="gov-btn gov-btn--ghost" disabled={step === 0} onClick={() => setStep(s => s - 1)}>
               {t("apply.back", "Back")}

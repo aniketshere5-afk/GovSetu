@@ -6,11 +6,22 @@ import multer from "multer";
 import { sdk } from "./_core/sdk";
 
 // Real local-disk document storage — no external object-storage dependency
-// required, so uploads work in local dev and on any deployment with a
-// persistent disk (e.g. a Railway volume mounted at UPLOAD_DIR).
-export const UPLOAD_DIR = process.env.UPLOAD_DIR || path.resolve(process.cwd(), "uploads");
+// required. IMPORTANT: a plain container filesystem (e.g. Railway without a
+// volume attached) is ephemeral and is wiped on every redeploy — attach a
+// Railway volume (which sets RAILWAY_VOLUME_MOUNT_PATH) or set UPLOAD_DIR to
+// a persistent path for uploads to actually survive in production.
+export const UPLOAD_DIR =
+  process.env.UPLOAD_DIR ||
+  (process.env.RAILWAY_VOLUME_MOUNT_PATH ? path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, "uploads") : path.resolve(process.cwd(), "uploads"));
 
 fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+
+if (process.env.NODE_ENV === "production" && !process.env.UPLOAD_DIR && !process.env.RAILWAY_VOLUME_MOUNT_PATH) {
+  console.warn(
+    `[upload] Storing uploads at ${UPLOAD_DIR} with no persistent volume attached — files will be LOST on the next deploy/restart. ` +
+      "Attach a Railway volume (or set UPLOAD_DIR to a mounted path) to persist them."
+  );
+}
 
 const ALLOWED_MIME = new Set([
   "application/pdf",

@@ -1,6 +1,7 @@
 import { startLogin } from "@/const";
 import { trpc } from "@/lib/trpc";
 import { TRPCClientError } from "@trpc/client";
+import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo } from "react";
 
 type UseAuthOptions = {
@@ -15,6 +16,7 @@ export function useAuth(options?: UseAuthOptions) {
   // desync it from an in-flight login's `state`.
   const { redirectOnUnauthenticated = false, redirectPath } = options ?? {};
   const utils = trpc.useUtils();
+  const queryClient = useQueryClient();
 
   const meQuery = trpc.auth.me.useQuery(undefined, {
     retry: false,
@@ -28,6 +30,12 @@ export function useAuth(options?: UseAuthOptions) {
   });
 
   const logout = useCallback(async () => {
+    // Cancel every in-flight query FIRST. Otherwise a request issued a moment
+    // before logout (e.g. another mounted component's auth.me/platform.*
+    // fetch, still carrying the old session cookie) can resolve after we
+    // clear the cache below and silently write the still-authenticated user
+    // right back in — the UI then flips back to "logged in" after a beat.
+    await queryClient.cancelQueries();
     try {
       await logoutMutation.mutateAsync();
     } catch (error: unknown) {
@@ -45,10 +53,16 @@ export function useAuth(options?: UseAuthOptions) {
       try {
         sessionStorage.removeItem("manus-cookie");
       } catch {}
+      // Every cached query may hold data scoped to the now-logged-out user
+      // (their applications, notifications, admin views, …) — drop it all,
+      // then reseed auth.me with null before refetching it fresh, so no
+      // stale response (in flight or cached) can silently restore the
+      // logged-in state.
+      queryClient.removeQueries();
       utils.auth.me.setData(undefined, null);
       await utils.auth.me.invalidate();
     }
-  }, [logoutMutation, utils]);
+  }, [logoutMutation, utils, queryClient]);
 
   const state = useMemo(() => {
     localStorage.setItem(

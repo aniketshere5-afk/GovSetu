@@ -126,7 +126,13 @@ function DetailInner() {
                     <FileText size={14} className="mt-0.5 flex-none text-muted-foreground" aria-hidden />
                     <span>
                       {d.documentType}
-                      <span className="block break-all text-xs text-muted-foreground">{d.referenceUrl}</span>
+                      {d.referenceUrl?.startsWith("/uploads/") ? (
+                        <a href={d.referenceUrl} target="_blank" rel="noreferrer" className="block break-all text-xs">
+                          {d.fileName || t("appDetail.viewFile", "View file")}
+                        </a>
+                      ) : (
+                        <span className="block break-all text-xs text-muted-foreground">{d.referenceUrl}</span>
+                      )}
                     </span>
                   </li>
                 ))}

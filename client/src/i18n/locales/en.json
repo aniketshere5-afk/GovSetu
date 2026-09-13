@@ -132,7 +132,7 @@
       "title": "Privacy Policy",
       "body": [
         "SetuGov coordinates the exchange of information between government departments. Departments remain the authoritative holders of their own records.",
-        "SetuGov stores application details you provide, the consent scopes you grant, coordination metadata and a tamper-evident audit trail. It does not store copies of departmental source records.",
+        "SetuGov stores application details you provide, the consent scopes you grant, coordination metadata, a tamper-evident audit trail, and any documents you choose to upload to your Document Vault or an application. It does not store copies of departmental source records — those remain with the issuing department.",
         "Data is shared with a department only after you grant purpose-limited consent for a specific scope, and only for that purpose."
       ]
     },
@@ -212,7 +212,9 @@
     "next": "Next",
     "submit": "Submit application",
     "submitting": "Submitting…",
-    "submitted": "Application {{n}} submitted"
+    "submitted": "Application {{n}} submitted",
+    "step0Hint": "Fill in the business name, entity type, a full address (8+ characters) and a valid email to continue.",
+    "step1Hint": "Grant every consent checkbox above to continue — each department can only act once you've allowed it to verify its scope."
   },
   "track": {
     "title": "Track Applications",
