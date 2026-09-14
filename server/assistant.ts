@@ -58,7 +58,11 @@ async function invokeGemini(system: string, messages: ChatMessage[]): Promise<st
         role: m.role === "assistant" ? "model" : "user",
         parts: [{ text: m.content }],
       })),
-      generationConfig: { maxOutputTokens: 700 },
+      // Gemini's "thinking" models (e.g. 3.x) spend part of this budget on
+      // internal reasoning tokens before ever producing visible text — a low
+      // limit here can hit MAX_TOKENS with an empty answer even though the
+      // request itself succeeded. Budget generously for both.
+      generationConfig: { maxOutputTokens: 3000 },
     }),
   });
 
@@ -68,14 +72,21 @@ async function invokeGemini(system: string, messages: ChatMessage[]): Promise<st
   }
 
   const data = (await response.json()) as {
-    candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+    candidates?: Array<{ finishReason?: string; content?: { parts?: Array<{ text?: string }> } }>;
   };
+  const finishReason = data.candidates?.[0]?.finishReason;
   const geminiText = (data.candidates?.[0]?.content?.parts ?? [])
     .map(p => p.text ?? "")
     .join("\n")
     .trim();
 
-  if (!geminiText) throw new Error("Gemini response contained no text");
+  if (!geminiText) {
+    throw new Error(
+      finishReason === "MAX_TOKENS"
+        ? "Gemini ran out of its token budget (likely spent on internal reasoning) before producing an answer"
+        : `Gemini response contained no text (finishReason: ${finishReason ?? "unknown"})`
+    );
+  }
   return geminiText;
 }
 
